@@ -1,0 +1,34 @@
+{
+  "Actions": [
+    {
+      "Icon": "icon",
+      "Name": "Stock Ticker",
+      "States": [
+        {
+          "Image": "defaultImage",
+          "TitleAlignment": "top",
+          "FontSize": "9",
+          "TitleColor": "#b7b7b7",
+          "ShowTitle": false
+        }
+      ],
+      "SupportedInMultiActions": false,
+      "Tooltip": "Display auto-updating stock ticker prices.",
+      "UUID": "com.exension.stockticker.symbol"
+    }
+  ],
+  "Author": "exension",
+  "CodePathWin": "sdplugin-stockticker.exe",
+  "PropertyInspectorPath": "index_pi.html",
+  "Description": "Display auto-updating stock ticker prices.",
+  "Name": "Stock Ticker",
+  "Icon": "pluginIcon",
+  "URL": "https://github.com/exension/stock-ticker-stream-deck-plugin",
+  "Version": "0.1.0",
+  "OS": [
+    {
+      "Platform": "windows",
+      "MinimumVersion": "10"
+    }
+  ]
+}
