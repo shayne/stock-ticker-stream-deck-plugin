@@ -20,7 +20,7 @@ func main() {
 	}
 
 	appdata := os.Getenv("APPDATA")
-	logpath := filepath.Join(appdata, "Elgato/StreamDeck/Plugins/com.exension.stockticker.sdPlugin/stockticker.log")
+	logpath := filepath.Join(appdata, "Elgato/StreamDeck/Plugins/com.exension.stocks.sdPlugin/stocks.log")
 	f, err := os.OpenFile(logpath, os.O_RDWR|os.O_CREATE, 0666)
 	if err != nil {
 		log.Fatalf("OpenFile Log: %v", err)
