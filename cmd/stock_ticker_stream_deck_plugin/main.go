@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"runtime"
 )
 
 var port = flag.String("port", "", "The port that should be used to create the WebSocket")
@@ -19,8 +20,15 @@ func main() {
 		log.Fatalf("Unable to chdir: %v", err)
 	}
 
-	appdata := os.Getenv("APPDATA")
-	logpath := filepath.Join(appdata, "Elgato/StreamDeck/Plugins/com.exension.stocks.sdPlugin/stocks.log")
+	var appdata string
+	var logpath string
+	if runtime.GOOS == "windows" {
+		appdata = os.Getenv("APPDATA")
+		logpath = filepath.Join(appdata, "Elgato/StreamDeck/Plugins/com.exension.stocks.sdPlugin/stocks.log")
+	} else {
+		appdata = os.Getenv("HOME")
+		logpath = filepath.Join(appdata, "Library/Application Support/com.elgato.StreamDeck/Plugins/com.exension.stocks.sdPlugin/stocks.log")
+	}
 	f, err := os.OpenFile(logpath, os.O_RDWR|os.O_CREATE, 0666)
 	if err != nil {
 		log.Fatalf("OpenFile Log: %v", err)
