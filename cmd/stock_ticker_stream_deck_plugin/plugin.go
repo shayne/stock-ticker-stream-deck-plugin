@@ -56,8 +56,13 @@ func (p *plugin) renderTile(t *tile, data StockData) *[]byte {
 		changePercent = data.PostChangePercent
 	case "PRE":
 		status = ""
-		price = data.PrePrice
-		change = data.PreChange
+		if data.PrePrice > 0 {
+			price = data.PrePrice
+			change = data.PreChange
+		} else {
+			price = data.PostPrice
+			change = data.PostChange
+		}
 		changePercent = data.PreChangePercent
 	}
 	arrow := ""
