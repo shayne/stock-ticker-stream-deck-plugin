@@ -87,12 +87,18 @@ func (p *plugin) updateTiles(tiles []*tile) {
 			symbols = append(symbols, t.symbol)
 		}
 	}
-	stocks := CallAPI(symbols)
-	for _, t := range tiles {
-		b := p.renderTile(t, stocks[t.symbol])
-		err := p.sd.SetImage(t.context, *b)
-		if err != nil {
-			log.Fatalf("sd.SetImage: %v\n", err)
+	log.Printf("symbols: %+v len: %d", symbols, len(symbols))
+	if len(symbols) > 0 {
+		stocks := CallAPI(symbols)
+		log.Println("STOCKS ", stocks)
+		for _, t := range tiles {
+			log.Println("for tiles render t: ", stocks[t.symbol])
+			log.Println("for tiles render stocks[t.symbol]: ", stocks[t.symbol])
+			b := p.renderTile(t, stocks[t.symbol])
+			err := p.sd.SetImage(t.context, *b)
+			if err != nil {
+				log.Fatalf("sd.SetImage: %v\n", err)
+			}
 		}
 	}
 }

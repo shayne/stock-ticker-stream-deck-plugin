@@ -1,4 +1,5 @@
 {
+  "SDKVersion": 2,
   "Actions": [
     {
       "Icon": "icon",
@@ -17,7 +18,8 @@
       "UUID": "com.exension.stocks.symbol"
     }
   ],
-  "Author": "exension",
+  "SDKVersion": 2,
+  "Author": "Patrick Lang",
   "CodePathWin": "sdplugin-stocks.exe",
   "CodePathMac": "sdplugin-stocks",
   "PropertyInspectorPath": "index_pi.html",
@@ -25,7 +27,7 @@
   "Name": "Stocks",
   "Icon": "pluginIcon",
   "URL": "https://github.com/exension/stock-ticker-stream-deck-plugin",
-  "Version": "1.0.0",
+  "Version": "2.0.0",
   "OS": [
     {
       "Platform": "windows",
@@ -35,5 +37,9 @@
       "Platform": "mac",
       "MinimumVersion": "10.11"
     }
-  ]
+  ],
+  "Software":
+  {
+    "MinimumVersion" : "4.1"
+  }
 }

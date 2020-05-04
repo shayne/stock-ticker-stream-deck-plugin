@@ -1,14 +1,12 @@
 // this is our global websocket, used to communicate from/to Stream Deck software
 // and some info about our plugin, as sent by Stream Deck software
-var websocket = null,
-  uuid = null,
-  actionInfo = {},
-  inInfo = {},
-  runningApps = [],
-  isQT = navigator.appVersion.includes("QtWebEngine"),
-  onchangeevt = "onchange"; // 'oninput'; // change this, if you want interactive elements act on any change, or while they're modified
+let websocket = null,
+    uuid = null,
+    actionInfo = {},
+    isQT = navigator.appVersion.includes("QtWebEngine"),
+    onchangeevt = "onchange"; // 'oninput'; // change this, if you want interactive elements act on any change, or while they're modified
 
-function connectSocket(inPort, inUUID, inRegisterEvent, inInfo, inActionInfo) {
+function connectElgatoStreamDeckSocket(inPort, inUUID, inRegisterEvent, inInfo, inActionInfo) {
   uuid = inUUID;
   // please note: the incoming arguments are of type STRING, so
   // in case of the inActionInfo, we must parse it into JSON first
@@ -26,7 +24,7 @@ function connectSocket(inPort, inUUID, inRegisterEvent, inInfo, inActionInfo) {
   // if connection was established, the websocket sends
   // an 'onopen' event, where we need to register our PI
   websocket.onopen = function() {
-    var json = {
+    let json = {
       event: inRegisterEvent,
       uuid: inUUID
     };
@@ -37,8 +35,8 @@ function connectSocket(inPort, inUUID, inRegisterEvent, inInfo, inActionInfo) {
 
   websocket.onmessage = function(evt) {
     // Received message from Stream Deck
-    var jsonObj = JSON.parse(evt.data);
-    var event = jsonObj["event"];
+    let jsonObj = JSON.parse(evt.data);
+    let event = jsonObj["event"];
     if (
       getPropFromString(jsonObj, "payload.symbol") &&
       event === "sendToPropertyInspector"
@@ -57,29 +55,29 @@ function sortBy(key) {
 }
 
 function addSensors(el, sensors, settings) {
-  var i;
+  let i;
   for (i = el.options.length - 1; i >= 0; i--) {
     el.remove(i);
   }
 
   el.removeAttribute("disabled");
 
-  var option = document.createElement("option");
+  let option = document.createElement("option");
   option.text = "Choose a sensor";
   option.disabled = true;
   if (settings.isValid !== true) {
     option.selected = true;
   }
   el.add(option);
-  var sortByName = sortBy("name");
+  let sortByName = sortBy("name");
   sensors.sort(sortByName).forEach(s => {
-    var option = document.createElement("option");
+    let option = document.createElement("option");
     option.text = s.name;
     option.value = s.uid;
     if (settings.isValid === true && settings.sensorUid === s.uid) {
       option.selected = true;
       setTimeout(function() {
-        var event = new Event("change");
+        let event = new Event("change");
         el.dispatchEvent(event);
       }, 0);
     }
@@ -88,14 +86,14 @@ function addSensors(el, sensors, settings) {
 }
 
 function addReadings(el, readings, settings) {
-  var i;
+  let i;
   for (i = el.options.length - 1; i >= 0; i--) {
     el.remove(i);
   }
 
   el.removeAttribute("disabled");
 
-  var option = document.createElement("option");
+  let option = document.createElement("option");
   option.text = "Choose a reading";
   option.disabled = true;
   if (settings.isValid !== true) {
@@ -103,18 +101,18 @@ function addReadings(el, readings, settings) {
   }
   el.add(option);
 
-  var sortByLabel = sortBy("label");
-  var maxL = 0;
+  let sortByLabel = sortBy("label");
+  let maxL = 0;
   readings.sort(sortByLabel).forEach(r => {
-    var l = r.prefix.length;
+    let l = r.prefix.length;
     if (l > maxL) {
       maxL = l;
     }
   });
   readings.sort(sortByLabel).forEach(r => {
-    var option = document.createElement("option");
+    let option = document.createElement("option");
     option.style = "white-space: pre";
-    var spaces = "&nbsp;";
+    let spaces = "&nbsp;";
     for (i = 0; i < maxL - r.prefix.length; ++i) {
       spaces += "&nbsp;";
     }
