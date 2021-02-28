@@ -81,11 +81,14 @@ func (p *plugin) renderTile(t *tile, data Result) *[]byte {
 }
 
 func (p *plugin) updateTiles(tiles []*tile) {
-	symbols := make([]string, 0, len(tiles))
+	var symbols []string
 	for _, t := range tiles {
 		if t.symbol != "" {
 			symbols = append(symbols, t.symbol)
 		}
+	}
+	if len(symbols) == 0 {
+		return
 	}
 	stocks := CallAPI(symbols)
 	if stocks == nil {
