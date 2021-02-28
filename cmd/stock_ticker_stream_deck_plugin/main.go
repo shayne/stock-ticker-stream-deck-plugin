@@ -24,10 +24,10 @@ func main() {
 	var logpath string
 	if runtime.GOOS == "windows" {
 		appdata = os.Getenv("APPDATA")
-		logpath = filepath.Join(appdata, "Elgato/StreamDeck/Plugins/com.exension.stocks.sdPlugin/stocks.log")
+		logpath = filepath.Join(appdata, "Elgato/StreamDeck/Plugins/com.shayne.stocks.sdPlugin/stocks.log")
 	} else {
 		appdata = os.Getenv("HOME")
-		logpath = filepath.Join(appdata, "Library/Application Support/com.elgato.StreamDeck/Plugins/com.exension.stocks.sdPlugin/stocks.log")
+		logpath = filepath.Join(appdata, "Library/Application Support/com.elgato.StreamDeck/Plugins/com.shayne.stocks.sdPlugin/stocks.log")
 	}
 	f, err := os.OpenFile(logpath, os.O_RDWR|os.O_CREATE, 0666)
 	if err != nil {

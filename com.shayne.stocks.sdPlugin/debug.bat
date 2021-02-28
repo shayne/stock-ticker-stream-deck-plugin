@@ -1,0 +1,1 @@
+dlv.exe exec --headless --listen=:2345 --log --api-version=2 sdplugin-stocks.exe --  %*

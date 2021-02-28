@@ -6,8 +6,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/exension/go-streamdeck-sdk"
 	"github.com/gorilla/websocket"
+	"github.com/shayne/go-streamdeck-sdk"
 )
 
 type tile struct {
@@ -38,32 +38,32 @@ func newPlugin(port, uuid, event, info string) *plugin {
 	return p
 }
 
-func (p *plugin) renderTile(t *tile, data StockData) *[]byte {
+func (p *plugin) renderTile(t *tile, data Result) *[]byte {
 	var price, change, changePercent float64
 	var status string
 	statusColor := orange // regular/pre
 	switch data.MarketState {
 	case "REGULAR":
 		status = ""
-		price = data.Price
-		change = data.Change
-		changePercent = data.ChangePercent
+		price = data.RegularMarketPrice
+		change = data.RegularMarketChange
+		changePercent = data.RegularMarketChangePercent
 	case "POST", "POSTPOST", "PREPRE", "CLOSED":
 		statusColor = blue
 		status = ""
-		price = data.PostPrice
-		change = data.PostChange
-		changePercent = data.PostChangePercent
+		price = data.PostMarketPrice
+		change = data.PostMarketChange
+		changePercent = data.PostMarketChangePercent
 	case "PRE":
 		status = ""
-		if data.PrePrice > 0 {
-			price = data.PrePrice
-			change = data.PreChange
+		if data.PreMarketPrice > 0 {
+			price = data.PreMarketPrice
+			change = data.PreMarketChange
 		} else {
-			price = data.PostPrice
-			change = data.PostChange
+			price = data.PostMarketPrice
+			change = data.PostMarketChange
 		}
-		changePercent = data.PreChangePercent
+		changePercent = data.PreMarketChangePercent
 	}
 	arrow := ""
 	arrowColor := red
@@ -88,6 +88,9 @@ func (p *plugin) updateTiles(tiles []*tile) {
 		}
 	}
 	stocks := CallAPI(symbols)
+	if stocks == nil {
+		return
+	}
 	for _, t := range tiles {
 		b := p.renderTile(t, stocks[t.symbol])
 		err := p.sd.SetImage(t.context, *b)
@@ -102,11 +105,9 @@ func (p *plugin) startUpdateLoop() {
 	for {
 		select {
 		case <-tick:
-			tiles := make([]*tile, 0, len(p.tiles))
-			i := 0
+			var tiles []*tile
 			for _, t := range p.tiles {
-				tiles[i] = t
-				i++
+				tiles = append(tiles, t)
 			}
 			p.updateTiles(tiles)
 		}

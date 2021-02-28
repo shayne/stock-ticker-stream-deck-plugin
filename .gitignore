@@ -1,1 +1,3 @@
-*.exe
+/com.shayne.stocks.sdPlugin/sdplugin-stock*
+/vendor
+/DistributionTool.exe
