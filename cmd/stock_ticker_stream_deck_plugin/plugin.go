@@ -8,6 +8,7 @@ import (
 
 	"github.com/gorilla/websocket"
 	"github.com/shayne/go-streamdeck-sdk"
+	"github.com/shayne/stock-ticker-stream-deck-plugin/pkg/api"
 )
 
 type tile struct {
@@ -38,7 +39,7 @@ func newPlugin(port, uuid, event, info string) *plugin {
 	return p
 }
 
-func (p *plugin) renderTile(t *tile, data Result) *[]byte {
+func (p *plugin) renderTile(t *tile, data api.Result) *[]byte {
 	var price, change, changePercent float64
 	var status string
 	statusColor := orange // regular/pre
@@ -90,7 +91,7 @@ func (p *plugin) updateTiles(tiles []*tile) {
 	if len(symbols) == 0 {
 		return
 	}
-	stocks := CallAPI(symbols)
+	stocks := api.Call(symbols)
 	if stocks == nil {
 		return
 	}
