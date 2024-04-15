@@ -1,12 +1,18 @@
 // this is our global websocket, used to communicate from/to Stream Deck software
 // and some info about our plugin, as sent by Stream Deck software
 let websocket = null,
-    uuid = null,
-    actionInfo = {},
-    isQT = navigator.appVersion.includes("QtWebEngine"),
-    onchangeevt = "onchange"; // 'oninput'; // change this, if you want interactive elements act on any change, or while they're modified
+  uuid = null,
+  actionInfo = {},
+  isQT = navigator.appVersion.includes("QtWebEngine"),
+  onchangeevt = "onchange"; // 'oninput'; // change this, if you want interactive elements act on any change, or while they're modified
 
-function connectElgatoStreamDeckSocket(inPort, inUUID, inRegisterEvent, inInfo, inActionInfo) {
+function connectElgatoStreamDeckSocket(
+  inPort,
+  inUUID,
+  inRegisterEvent,
+  inInfo,
+  inActionInfo
+) {
   uuid = inUUID;
   // please note: the incoming arguments are of type STRING, so
   // in case of the inActionInfo, we must parse it into JSON first
@@ -23,17 +29,17 @@ function connectElgatoStreamDeckSocket(inPort, inUUID, inRegisterEvent, inInfo, 
 
   // if connection was established, the websocket sends
   // an 'onopen' event, where we need to register our PI
-  websocket.onopen = function() {
+  websocket.onopen = function () {
     let json = {
       event: inRegisterEvent,
-      uuid: inUUID
+      uuid: inUUID,
     };
     // register property inspector to Stream Deck
     websocket.send(JSON.stringify(json));
     sendValueToPlugin("propertyInspectorConnected", "property_inspector");
   };
 
-  websocket.onmessage = function(evt) {
+  websocket.onmessage = function (evt) {
     // Received message from Stream Deck
     let jsonObj = JSON.parse(evt.data);
     let event = jsonObj["event"];
@@ -43,11 +49,17 @@ function connectElgatoStreamDeckSocket(inPort, inUUID, inRegisterEvent, inInfo, 
     ) {
       document.querySelector("#symbol input").value = jsonObj.payload.symbol;
     }
+    if (
+      getPropFromString(jsonObj, "payload.apikey") &&
+      event === "sendToPropertyInspector"
+    ) {
+      document.querySelector("#apikey input").value = jsonObj.payload.apikey;
+    }
   };
 }
 
 function sortBy(key) {
-  return function(a, b) {
+  return function (a, b) {
     if (a[key] > b[key]) return 1;
     if (b[key] > a[key]) return -1;
     return 0;
@@ -70,13 +82,13 @@ function addSensors(el, sensors, settings) {
   }
   el.add(option);
   let sortByName = sortBy("name");
-  sensors.sort(sortByName).forEach(s => {
+  sensors.sort(sortByName).forEach((s) => {
     let option = document.createElement("option");
     option.text = s.name;
     option.value = s.uid;
     if (settings.isValid === true && settings.sensorUid === s.uid) {
       option.selected = true;
-      setTimeout(function() {
+      setTimeout(function () {
         let event = new Event("change");
         el.dispatchEvent(event);
       }, 0);
@@ -103,13 +115,13 @@ function addReadings(el, readings, settings) {
 
   let sortByLabel = sortBy("label");
   let maxL = 0;
-  readings.sort(sortByLabel).forEach(r => {
+  readings.sort(sortByLabel).forEach((r) => {
     let l = r.prefix.length;
     if (l > maxL) {
       maxL = l;
     }
   });
-  readings.sort(sortByLabel).forEach(r => {
+  readings.sort(sortByLabel).forEach((r) => {
     let option = document.createElement("option");
     option.style = "white-space: pre";
     let spaces = "&nbsp;";
@@ -140,8 +152,8 @@ function openUrl(url) {
     const json = {
       event: "openUrl",
       payload: {
-        url: url
-      }
+        url: url,
+      },
     };
     websocket.send(JSON.stringify(json));
   }
@@ -155,21 +167,21 @@ function sendValueToPlugin(value, param) {
       event: "sendToPlugin",
       context: uuid,
       payload: {
-        [param]: value
-      }
+        [param]: value,
+      },
     };
     websocket.send(JSON.stringify(json));
   }
 }
 
 if (!isQT) {
-  document.addEventListener("DOMContentLoaded", function() {
+  document.addEventListener("DOMContentLoaded", function () {
     initPropertyInspector(100);
   });
 }
 
 /** the beforeunload event is fired, right before the PI will remove all nodes */
-window.addEventListener("beforeunload", function(e) {
+window.addEventListener("beforeunload", function (e) {
   e.preventDefault();
   sendValueToPlugin("propertyInspectorWillDisappear", "property_inspector");
   // Don't set a returnValue to the event, otherwise Chromium with throw an error.  // e.returnValue = '';
@@ -215,7 +227,7 @@ function prepareDOMElements(baseElement) {
         "TABLE",
         "METER",
         "PROGRESS",
-        "CANVAS"
+        "CANVAS",
       ].includes(el.tagName);
       const evt = elementsToClick ? "onclick" : onchangeevt || "onchange";
       // console.log(el.type, el.tagName, elementsToClick, el, evt);
@@ -227,7 +239,7 @@ function prepareDOMElements(baseElement) {
       if (inputGroup.length === 2) {
         const offs = inputGroup[0].tagName === "INPUT" ? 1 : 0;
         inputGroup[offs].innerText = inputGroup[1 - offs].value;
-        inputGroup[1 - offs]["oninput"] = function() {
+        inputGroup[1 - offs]["oninput"] = function () {
           inputGroup[offs].innerText = inputGroup[1 - offs].value;
         };
       }
@@ -236,17 +248,17 @@ function prepareDOMElements(baseElement) {
        * the corresponding range-control
        */
       Array.from(el.querySelectorAll(".clickable")).forEach((subel, subi) => {
-        subel["onclick"] = function(e) {
+        subel["onclick"] = function (e) {
           handleSdpiItemClick(e.target, subi);
         };
       });
-      el[evt] = function(e) {
+      el[evt] = function (e) {
         handleSdpiItemClick(e.target, i);
       };
     }
   );
 
-  baseElement.querySelectorAll("textarea").forEach(e => {
+  baseElement.querySelectorAll("textarea").forEach((e) => {
     const maxl = e.getAttribute("maxlength");
     e.targets = baseElement.querySelectorAll(`[for='${e.id}']`);
     if (e.targets.length) {
@@ -330,7 +342,7 @@ function handleSdpiItemClick(e, idx) {
     group: sdpiItemGroup ? sdpiItemGroup.id : false,
     index: idx,
     selection: selectedElements,
-    checked: e.checked
+    checked: e.checked,
   };
 
   /** Just simulate the original file-selector:
@@ -355,7 +367,7 @@ function updateKeyForDemoCanvas(cnv) {
   sendValueToPlugin(
     {
       key: "your_canvas",
-      value: cnv.toDataURL()
+      value: cnv.toDataURL(),
     },
     "sdpi_collection"
   );
@@ -444,16 +456,17 @@ function sdpiCreateList(el, obj, cb) {
     if (obj.value.length) {
       el.innerHTML = `<div class="sdpi-item" ${
         obj.type ? `class="${obj.type}"` : ""
-      } id="${obj.id ||
-        window.btoa(new Date().getTime().toString()).substr(0, 8)}">
+      } id="${
+        obj.id || window.btoa(new Date().getTime().toString()).substr(0, 8)
+      }">
             <div class="sdpi-item-label">${obj.label || ""}</div>
             <ul class="sdpi-item-value ${
               obj.selectionType ? obj.selectionType : ""
             }">
-                    ${obj.value.map(e => `<li>${e.name}</li>`).join("")}
+                    ${obj.value.map((e) => `<li>${e.name}</li>`).join("")}
                 </ul>
             </div>`;
-      setTimeout(function() {
+      setTimeout(function () {
         prepareDOMElements(el);
         if (cb) cb();
       }, 10);

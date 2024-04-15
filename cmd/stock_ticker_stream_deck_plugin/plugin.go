@@ -4,10 +4,13 @@ import (
 	"encoding/json"
 	"log"
 	"strings"
+	"sync"
 	"time"
 
+	"github.com/Finnhub-Stock-API/finnhub-go/v2"
 	"github.com/gorilla/websocket"
 	"github.com/shayne/go-streamdeck-sdk"
+
 	"github.com/shayne/stock-ticker-stream-deck-plugin/pkg/api"
 )
 
@@ -15,6 +18,7 @@ type tile struct {
 	context string
 	title   string
 	symbol  string
+	apikey  string
 }
 
 type plugin struct {
@@ -39,33 +43,23 @@ func newPlugin(port, uuid, event, info string) *plugin {
 	return p
 }
 
-func (p *plugin) renderTile(t *tile, data api.Result) *[]byte {
-	var price, change, changePercent float64
+func (p *plugin) renderTile(t *tile, symbol string, marketStatus finnhub.MarketStatus, quote finnhub.Quote) *[]byte {
+	var price, change, changePercent float32
 	var status string
 	statusColor := orange // regular/pre
-	switch data.MarketState {
-	case "REGULAR":
+
+	switch marketStatus.GetSession() {
+	case "regular":
 		status = ""
-		price = data.RegularMarketPrice
-		change = data.RegularMarketChange
-		changePercent = data.RegularMarketChangePercent
-	case "POST", "POSTPOST", "PREPRE", "CLOSED":
+	case "pre-market":
+		status = ""
+	default:
 		statusColor = blue
 		status = ""
-		price = data.PostMarketPrice
-		change = data.PostMarketChange
-		changePercent = data.PostMarketChangePercent
-	case "PRE":
-		status = ""
-		if data.PreMarketPrice > 0 {
-			price = data.PreMarketPrice
-			change = data.PreMarketChange
-		} else {
-			price = data.PostMarketPrice
-			change = data.PostMarketChange
-		}
-		changePercent = data.PreMarketChangePercent
 	}
+	price = quote.GetC()
+	change = quote.GetD()
+	changePercent = quote.GetDp()
 	arrow := ""
 	arrowColor := red
 	if change > 0 {
@@ -74,14 +68,25 @@ func (p *plugin) renderTile(t *tile, data api.Result) *[]byte {
 	} else if change == 0 {
 		arrow = ""
 	}
-	title := data.Symbol
+	title := symbol
 	if t.title != "" {
 		title = t.title
 	}
 	return DrawTile(title, price, change, changePercent, status, statusColor, arrow, arrowColor)
 }
 
+var (
+	updateMu = sync.Mutex{}
+)
+
 func (p *plugin) updateTiles(tiles []*tile) {
+	go p.goUpdateTiles(tiles)
+}
+
+func (p *plugin) goUpdateTiles(tiles []*tile) {
+	updateMu.Lock()
+	defer updateMu.Unlock()
+
 	var symbols []string
 	for _, t := range tiles {
 		if t.symbol != "" {
@@ -91,12 +96,17 @@ func (p *plugin) updateTiles(tiles []*tile) {
 	if len(symbols) == 0 {
 		return
 	}
-	stocks := api.Call(symbols)
-	if stocks == nil {
+	result := api.Call(symbols)
+	if result == nil {
+		log.Print("API call returned nil")
 		return
 	}
 	for _, t := range tiles {
-		b := p.renderTile(t, stocks[t.symbol])
+		quote, ok := result.Quotes[t.symbol]
+		if !ok {
+			continue
+		}
+		b := p.renderTile(t, t.symbol, result.MarketStatus, quote)
 		err := p.sd.SetImage(t.context, *b)
 		if err != nil {
 			log.Fatalf("sd.SetImage: %v\n", err)
@@ -106,15 +116,8 @@ func (p *plugin) updateTiles(tiles []*tile) {
 
 func (p *plugin) startUpdateLoop() {
 	tick := time.Tick(5 * time.Minute)
-	for {
-		select {
-		case <-tick:
-			var tiles []*tile
-			for _, t := range p.tiles {
-				tiles = append(tiles, t)
-			}
-			p.updateTiles(tiles)
-		}
+	for range tick {
+		p.updateAllTiles()
 	}
 }
 
@@ -139,10 +142,34 @@ func (p plugin) OnWillAppear(ev *streamdeck.EvWillAppear) {
 		if err != nil {
 			log.Println("OnWillAppear settings unmarshal", err)
 		}
-		t := &tile{context: ev.Context, symbol: settings["symbol"]}
+		// If the API key was not set, but these settings
+		// have an API key, set it and update all tiles
+		var updateAll bool
+		apiKey := api.APIKey()
+		if apiKey == "" && settings["apikey"] != "" {
+			apiKey = settings["apikey"]
+			api.SetAPIKey(apiKey)
+			updateAll = true
+		}
+		t := &tile{context: ev.Context, symbol: settings["symbol"], apikey: apiKey}
 		p.tiles[ev.Context] = t
-		p.updateTiles([]*tile{t})
+		if updateAll {
+			for _, t := range p.tiles {
+				t.apikey = apiKey
+			}
+			p.updateAllTiles()
+		} else {
+			p.updateTiles([]*tile{t})
+		}
 	}
+}
+
+func (p plugin) updateAllTiles() {
+	var tiles []*tile
+	for _, t := range p.tiles {
+		tiles = append(tiles, t)
+	}
+	p.updateTiles(tiles)
 }
 
 func (p plugin) OnTitleParametersDidChange(ev *streamdeck.EvTitleParametersDidChange) {
@@ -152,13 +179,13 @@ func (p plugin) OnTitleParametersDidChange(ev *streamdeck.EvTitleParametersDidCh
 		return
 	}
 	t.title = ev.Payload.Title
-	p.updateTiles([]*tile{t})
 }
 
 func (p plugin) OnPropertyInspectorConnected(ev *streamdeck.EvSendToPlugin) {
 	if t, ok := p.tiles[ev.Context]; ok {
 		settings := make(settingsType)
 		settings["symbol"] = t.symbol
+		settings["apikey"] = api.APIKey()
 		p.sd.SendToPropertyInspector(ev.Action, ev.Context, &settings)
 	}
 }
@@ -175,20 +202,50 @@ func (p plugin) OnSendToPlugin(ev *streamdeck.EvSendToPlugin) {
 		if err != nil {
 			log.Println("SDPI unmarshal", err)
 		}
+		t := p.tiles[ev.Context]
+		if t == nil {
+			log.Printf("Tile was nil, creating new tile for %s\n", ev.Context)
+			p.tiles[ev.Context] = &tile{context: ev.Context}
+			t = p.tiles[ev.Context]
+		}
+		settings := make(settingsType)
+		settings["apikey"] = api.APIKey()
+		settings["symbol"] = p.tiles[ev.Context].symbol
+
+		var updateAll bool
 		switch sdpi.Key {
 		case "symbol":
 			symbol := strings.ToUpper(sdpi.Value)
-			settings := make(settingsType)
+			t.symbol = symbol
 			settings["symbol"] = symbol
+		case "apikey":
+			// If they updated the API key, we need to update it
+			// and update all tiles
+			apikey := sdpi.Value
+			api.SetAPIKey(apikey)
+			updateAll = true
+			t.apikey = apikey
+			settings["apikey"] = apikey
+		}
+		if updateAll {
+			apikey := api.APIKey()
+			for _, t := range p.tiles {
+				t.apikey = apikey
+				err := p.sd.SetSettings(t.context, settingsType{
+					"symbol": t.symbol,
+					"apikey": apikey,
+				})
+				if err != nil {
+					log.Printf("error setting settings: %v", err)
+				}
+			}
+			p.updateAllTiles()
+		} else {
+			log.Printf("saving settings: %v", settings)
 			err = p.sd.SetSettings(ev.Context, &settings)
 			if err != nil {
 				log.Fatalf("setSettings: %v", err)
 			}
-			t := p.tiles[ev.Context]
-			if t == nil {
-				log.Fatal("Tile was nil")
-			}
-			t.symbol = symbol
 			p.updateTiles([]*tile{t})
 		}
 	}

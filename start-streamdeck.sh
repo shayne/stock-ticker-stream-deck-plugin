@@ -1,2 +1,3 @@
 #!/bin/sh
-'/Applications/Stream Deck.app/Contents/MacOS/Stream Deck'
+killall "Stream Deck"
+open -n /Applications/Elgato\ Stream\ Deck.app

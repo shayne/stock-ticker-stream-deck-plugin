@@ -26,7 +26,7 @@ var (
 )
 
 // DrawTile renders the tile given context and stock data
-func DrawTile(title string, price, change, changePercent float64, status string, statusColor *color.RGBA, arrow string, arrowColor *color.RGBA) *[]byte {
+func DrawTile(title string, price, change, changePercent float32, status string, statusColor *color.RGBA, arrow string, arrowColor *color.RGBA) *[]byte {
 	img := image.NewRGBA(image.Rect(0, 0, int(width), int(width)))
 	drawLabel(&Label{
 		text:     title,
