@@ -26,7 +26,7 @@
   "Icon": "pluginIcon",
   "URL": "https://github.com/shayne/stock-ticker-stream-deck-plugin",
   "SDKVersion": 2,
-  "Version": "1.2.0",
+  "Version": "1.2.1",
   "OS": [
     {
       "Platform": "windows",
