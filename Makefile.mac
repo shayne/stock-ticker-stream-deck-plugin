@@ -1,18 +1,24 @@
 plugin:
 	-@./kill-streamdeck.sh
 	env GOOS=windows GOARCH=amd64 go build -o com.exension.stocks.sdPlugin/sdplugin-stocks.exe github.com/shayne/stock-ticker-stream-deck-plugin/cmd/stock_ticker_stream_deck_plugin
-	env GOOS=darwin GOARCH=amd64 go build -o com.exension.stocks.sdPlugin/sdplugin-stocks github.com/shayne/stock-ticker-stream-deck-plugin/cmd/stock_ticker_stream_deck_plugin
+	env GOOS=darwin GOARCH=amd64 go build -o sdplugin-stocks-amd64 github.com/shayne/stock-ticker-stream-deck-plugin/cmd/stock_ticker_stream_deck_plugin
+	env GOOS=darwin GOARCH=arm64 go build -o sdplugin-stocks-arm64 github.com/shayne/stock-ticker-stream-deck-plugin/cmd/stock_ticker_stream_deck_plugin
+	lipo -create -output com.exension.stocks.sdPlugin/sdplugin-stocks sdplugin-stocks-amd64 sdplugin-stocks-arm64
+	rm sdplugin-stocks-amd64 sdplugin-stocks-arm64
 	cp -r com.exension.stocks.sdPlugin ~/Library/Application\ Support/com.elgato.StreamDeck/Plugins/
 	./start-streamdeck.sh
 
 debug:
 	@env GOOS=windows GOARCH=amd64 go build com.exension.stocks.sdPlugin/sdplugin-stocks.exe github.com/shayne/stock-ticker-stream-deck-plugin/cmd/stock_ticker_stream_deck_plugin
-	@env GOOS=darwin GOARCH=amd64 go build -o com.exension.stocks.sdPlugin/sdplugin-stocks github.com/shayne/stock-ticker-stream-deck-plugin/cmd/stock_ticker_stream_deck_plugin
+	@env GOOS=darwin GOARCH=arm64 go build -o com.exension.stocks.sdPlugin/sdplugin-stocks github.com/shayne/stock-ticker-stream-deck-plugin/cmd/stock_ticker_stream_deck_plugin
 	@cp -r com.exension.stocks.sdPlugin ~/Library/Application\ Support/com.elgato.StreamDeck/Plugins/com.exension.stocks.sdPlugin
 
 release:
 	@env GOOS=windows GOARCH=amd64 go build -o com.exension.stocks.sdPlugin/sdplugin-stocks.exe github.com/shayne/stock-ticker-stream-deck-plugin/cmd/stock_ticker_stream_deck_plugin
-	@env GOOS=darwin GOARCH=amd64 go build -o com.exension.stocks.sdPlugin/sdplugin-stocks github.com/shayne/stock-ticker-stream-deck-plugin/cmd/stock_ticker_stream_deck_plugin
+	@env GOOS=darwin GOARCH=amd64 go build -o sdplugin-stocks-amd64 github.com/shayne/stock-ticker-stream-deck-plugin/cmd/stock_ticker_stream_deck_plugin
+	@env GOOS=darwin GOARCH=arm64 go build -o sdplugin-stocks-arm64 github.com/shayne/stock-ticker-stream-deck-plugin/cmd/stock_ticker_stream_deck_plugin
+	@lipo -create -output com.exension.stocks.sdPlugin/sdplugin-stocks sdplugin-stocks-amd64 sdplugin-stocks-arm64
+	@rm sdplugin-stocks-amd64 sdplugin-stocks-arm64
 	-@rm release/com.exension.stocks.streamDeckPlugin
 	@./DistributionTool -b -i com.exension.stocks.sdPlugin -o release
 
